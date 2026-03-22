@@ -38,6 +38,7 @@
     .nav-link:hover { background: var(--bg); color: var(--text); }
     .nav-link.aktif { background: var(--bg); color: var(--text); }
     .nav-sag { display: flex; align-items: center; gap: 8px; }
+    
     .dark-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 15px; cursor: pointer; }
     .ilan-btn { background: var(--text); color: var(--bg); border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 500; font-family: 'DM Sans', Arial, sans-serif; cursor: pointer; }
 
@@ -68,6 +69,7 @@
     .filtre-btn.aktif { background: var(--text); color: var(--bg); border-color: var(--text); }
 
     .grid { max-width: 700px; margin: 0 auto; padding: 0 24px 80px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .grid.sayfa2 { margin-top: 24px; }
     .kart { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; transition: transform 0.2s, box-shadow 0.2s; animation: kartGel 0.35s ease both; }
     @keyframes kartGel { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
     .kart:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
@@ -163,6 +165,25 @@
     .bos-mesaj { text-align: center; color: var(--muted); padding: 60px 0; grid-column: 1/-1; }
     .bos-mesaj div { font-size: 36px; margin-bottom: 12px; }
     @media (max-width: 500px) { .nav-linkler { display: none; } }
+    .sayfalama { max-width: 700px; margin: 0 auto; padding: 0 24px 40px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+    .sayfa-btn { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 16px; font-size: 14px; cursor: pointer; color: var(--text); font-family: 'DM Sans', Arial, sans-serif; transition: all 0.15s; }
+    .sayfa-btn:hover { border-color: var(--accent); }
+    .sayfa-btn.aktif-sayfa { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .sayfa-btn:disabled { opacity: 0.3; cursor: default; }
+    .sayfa-info { font-size: 13px; color: var(--muted); }
+
+    .bildirim-wrap { position: relative; }
+    .bildirim-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 15px; cursor: pointer; position: relative; }
+    .bildirim-sayi { position: absolute; top: -6px; right: -6px; background: #E74C3C; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+    .bildirim-panel { position: absolute; top: 44px; right: 0; width: 300px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 300; overflow: hidden; display: none; }
+    .bildirim-panel.acik { display: block; animation: yukariGel 0.2s ease; }
+    .bildirim-baslik { padding: 14px 16px; font-size: 14px; font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border); }
+    .bildirim-item { padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+    .bildirim-item:hover { background: var(--bg); }
+    .bildirim-item:last-child { border-bottom: none; }
+    .bildirim-item-baslik { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+    .bildirim-item-alt { font-size: 12px; color: var(--muted); }
+    .bildirim-bos { padding: 24px; text-align: center; font-size: 13px; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -196,6 +217,16 @@
       <button class="nav-link" id="nav-profil" onclick="sayfaGoster('profil')">👤 Profil</button>
     </div>
     <div class="nav-sag">
+      <div class="bildirim-wrap">
+        <button class="bildirim-btn" onclick="bildirimAc()" id="bildirim-btn">
+          🔔
+          <span class="bildirim-sayi" id="bildirim-sayi">3</span>
+        </button>
+        <div class="bildirim-panel" id="bildirim-panel">
+          <div class="bildirim-baslik">🔔 Bildirimler</div>
+          <div id="bildirim-listesi"></div>
+        </div>
+      </div>
       <button class="dark-btn" onclick="darkMod()" id="dark-btn">🌙</button>
       <button class="ilan-btn" onclick="formAc()">+ İlan Ver</button>
     </div>
@@ -330,6 +361,13 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  var mevcutSayfa = 1;
+  var sayfaBasina = 2;
+  var bildirimler = [
+    { baslik: "Yeni ilan: Ütü makinesi", alt: "Zeynep K. · Az önce", emoji: "👕" },
+    { baslik: "Yeni ilan: Calculus kitabı", alt: "Selin A. · 2 saat önce", emoji: "📚" },
+    { baslik: "Yeni ilan: Su ısıtıcısı", alt: "Büşra T. · 3 saat önce", emoji: "☕" },
+  ];
   var kullanicilar = [
     { isim: "Zeynep K.", oda: "214", avatar: "ZK" },
     { isim: "Selin A.", oda: "305", avatar: "SA" },
@@ -539,20 +577,52 @@
   }
 
   function kartlariGoster() {
-    var grid=document.getElementById("grid");
-    var arama=document.getElementById("arama").value.toLowerCase();
-    var gorunenler=ilanlar.filter(function(ilan){
-      return (secilenFiltre==="hepsi"||ilan.tur===secilenFiltre)&&(arama===""||ilan.baslik.toLowerCase().includes(arama)||ilan.aciklama.toLowerCase().includes(arama));
+    var grid = document.getElementById("grid");
+    var arama = document.getElementById("arama").value.toLowerCase();
+    var gorunenler = ilanlar.filter(function(ilan) {
+      return (secilenFiltre==="hepsi"||ilan.tur===secilenFiltre) &&
+             (arama===""||ilan.baslik.toLowerCase().includes(arama)||ilan.aciklama.toLowerCase().includes(arama));
     });
-    if(gorunenler.length===0){grid.innerHTML='<div class="bos-mesaj"><div>🔍</div>Sonuç bulunamadı.</div>';return;}
-    grid.innerHTML=gorunenler.map(kartOlustur).join("");
+    if (gorunenler.length===0) { grid.innerHTML='<div class="bos-mesaj"><div>🔍</div>Sonuç bulunamadı.</div>'; sayfalamaGoster(0,0); return; }
+    var toplamSayfa = Math.ceil(gorunenler.length / sayfaBasina);
+    if (mevcutSayfa > toplamSayfa) mevcutSayfa = 1;
+    var baslangic = (mevcutSayfa-1) * sayfaBasina;
+    var sayfa = gorunenler.slice(baslangic, baslangic + sayfaBasina);
+    grid.innerHTML = sayfa.map(kartOlustur).join("");
+    sayfalamaGoster(mevcutSayfa, toplamSayfa);
   }
 
-  function filtrele(tur,btn){
-    secilenFiltre=tur;
-    document.querySelectorAll(".filtre-btn").forEach(function(b){b.classList.remove("aktif");});
-    btn.classList.add("aktif");
+  function sayfalamaGoster(mevcut, toplam) {
+    var eski = document.getElementById("sayfalama-wrap");
+    if (eski) eski.remove();
+    if (toplam <= 1) return;
+    var div = document.createElement("div");
+    div.className = "sayfalama";
+    div.id = "sayfalama-wrap";
+    div.innerHTML =
+      '<button class="sayfa-btn" onclick="sayfaDegistir('+(mevcut-1)+')" '+(mevcut<=1?"disabled":"")+'>←</button>'+
+      '<span class="sayfa-info">'+mevcut+' / '+toplam+'</span>'+
+      '<button class="sayfa-btn" onclick="sayfaDegistir('+(mevcut+1)+')" '+(mevcut>=toplam?"disabled":"")+'>→</button>';
+    document.getElementById("grid").after(div);
+  }
+function sayfaDegistir(yeni) {
+    mevcutSayfa = yeni;
+    if (mevcutSayfa > 1) {
+      document.querySelector(".hero").style.display = "none";
+      document.querySelector(".arama-wrap").style.display = "none";
+      document.querySelector(".kullanici-arama-wrap").style.display = "none";
+      document.querySelector(".kullanici-sonuclar").style.display = "none";
+      document.querySelector(".filtreler").style.display = "none";
+    } else {
+      document.querySelector(".hero").style.display = "block";
+      document.querySelector(".arama-wrap").style.display = "block";
+      document.querySelector(".kullanici-arama-wrap").style.display = "block";
+      document.querySelector(".kullanici-sonuclar").style.display = "flex";
+      document.querySelector(".filtreler").style.display = "flex";
+    }
     kartlariGoster();
+    document.getElementById("grid").style.marginTop = mevcutSayfa > 1 ? "24px" : "0";
+    window.scrollTo({top: 0, behavior: "smooth"});
   }
 
   function formAc(){document.getElementById("overlay").classList.add("acik");}
@@ -584,6 +654,51 @@
     var t=document.getElementById("toast");
     t.textContent=mesaj; t.classList.add("goster");
     setTimeout(function(){t.classList.remove("goster");},2800);
+  }
+ function bildirimAc() {
+    var panel = document.getElementById("bildirim-panel");
+    panel.classList.toggle("acik");
+    var liste = document.getElementById("bildirim-listesi");
+    if (bildirimler.length === 0) {
+      liste.innerHTML = '<div class="bildirim-bos">Yeni bildirim yok 🎉</div>';
+    } else {
+      liste.innerHTML = bildirimler.map(function(b, i) {
+        return '<div class="bildirim-item" onclick="bildirimeTikla('+i+')">'+
+          '<div class="bildirim-item-baslik">'+b.emoji+' '+b.baslik+'</div>'+
+          '<div class="bildirim-item-alt">'+b.alt+'</div>'+
+        '</div>';
+      }).join("");
+    }
+    document.getElementById("bildirim-sayi").style.display = "none";
+  }
+
+  function bildirimeTikla(index) {
+    var bildirim = bildirimler[index];
+    var ilanAdi = bildirim.baslik.replace("Yeni ilan: ", "");
+    document.getElementById("bildirim-panel").classList.remove("acik");
+    sayfaGoster("ilanlar");
+
+    var ilanIndex = ilanlar.findIndex(function(i) {
+      return i.baslik === ilanAdi;
+    });
+    if (ilanIndex === -1) return;
+
+    mevcutSayfa = Math.ceil((ilanIndex + 1) / sayfaBasina);
+    kartlariGoster();
+
+    setTimeout(function() {
+      var kartlar = document.querySelectorAll(".kart h2");
+      kartlar.forEach(function(h) {
+        if (h.textContent.includes(ilanAdi)) {
+          var kart = h.closest(".kart");
+          var kartYukarida = kart.getBoundingClientRect().top + window.scrollY - 70;
+          window.scrollTo({top: kartYukarida, behavior: "smooth"});
+          kart.style.border = "2px solid var(--accent)";
+          kart.style.transition = "border 0.3s";
+          setTimeout(function(){ kart.style.border = "1px solid var(--border)"; }, 1500);
+        }
+      });
+    }, 300);
   }
 </script>
 </body>
